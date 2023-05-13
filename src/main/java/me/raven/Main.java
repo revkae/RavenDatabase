@@ -8,6 +8,7 @@ public class Main {
                 Column.with("first", DataType.VARCHAR, 1000),
                 Column.with("second", DataType.VARCHAR, 1000)
         );
+        table.update();
         database.attachTable(table);
     }
 }

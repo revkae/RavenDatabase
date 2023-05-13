@@ -10,9 +10,11 @@ import java.util.StringJoiner;
 
 public class Table {
 
-    private String tableName;
+    private final Database database;
+    private final String tableName;
 
     public Table(String tableName, Column... columns) {
+        this.database = Database.get();
         this.tableName = tableName;
 
         StringJoiner statementArgs = new StringJoiner(",");
@@ -24,10 +26,8 @@ public class Table {
             }
         }
 
-        try (PreparedStatement statement = Database.get().getConnection().prepareStatement(
-                "CREATE TABLE IF NOT EXISTS "
-                        + tableName
-                        + "(" + statementArgs + ")")) {
+        try (PreparedStatement statement = database.getConnection().prepareStatement(
+                "CREATE TABLE IF NOT EXISTS %s(%s)".formatted(tableName, statementArgs))) {
 
             statement.executeUpdate();
         } catch (SQLException e) {
@@ -46,7 +46,7 @@ public class Table {
             wheres.add(whereValue.name + " = '" + whereValue.value + "'");
         }
 
-        try (PreparedStatement statement = Database.get().getConnection().prepareStatement(
+        try (PreparedStatement statement = database.getConnection().prepareStatement(
                 "UPDATE "
                         + tableName
                         + " SET "
@@ -69,7 +69,7 @@ public class Table {
             values.add("?");
         }
 
-        try (PreparedStatement statement = Database.get().getConnection().prepareStatement(
+        try (PreparedStatement statement = database.getConnection().prepareStatement(
                 "INSERT INTO "
                         + tableName
                         + "(" + names + ")"
@@ -104,7 +104,7 @@ public class Table {
             values.add("?");
         }
 
-        try (PreparedStatement statement = Database.get().getConnection().prepareStatement(
+        try (PreparedStatement statement = database.getConnection().prepareStatement(
                 "INSERT INTO "
                         + tableName
                         + "(" + names + ")"
@@ -142,7 +142,7 @@ public class Table {
             whereValues.add(dataValue.name + " = '" + dataValue.value + "'");
         }
 
-        try (PreparedStatement preparedStatement = Database.get().getConnection().prepareStatement(
+        try (PreparedStatement preparedStatement = database.getConnection().prepareStatement(
                 "DELETE FROM "
                         + tableName
                         + " WHERE "
@@ -160,7 +160,7 @@ public class Table {
             whereValues.add(dataValue.name + " = '" + dataValue.value + "'");
         }
 
-        try (PreparedStatement preparedStatement = Database.get().getConnection().prepareStatement(
+        try (PreparedStatement preparedStatement = database.getConnection().prepareStatement(
                 "DELETE FROM "
                         + tableName
                         + " WHERE "
@@ -184,7 +184,7 @@ public class Table {
             wheres.add(whereValue.name + " = '" + whereValue.value + "'");
         }
 
-        try (PreparedStatement statement = Database.get().getConnection().prepareStatement(
+        try (PreparedStatement statement = database.getConnection().prepareStatement(
                 "SELECT " +
                         name +
                         " FROM " +
@@ -202,7 +202,7 @@ public class Table {
     public List<DataValue> getColumn(String name) {
         List<DataValue> output = new ArrayList<>();
 
-        try (PreparedStatement statement = Database.get().getConnection().prepareStatement(
+        try (PreparedStatement statement = database.getConnection().prepareStatement(
                 "SELECT " +
                         name +
                         " FROM " +
@@ -220,7 +220,7 @@ public class Table {
     public List<DataValue> getColumns() {
         List<DataValue> output = new ArrayList<>();
 
-        try (PreparedStatement statement = Database.get().getConnection().prepareStatement(
+        try (PreparedStatement statement = database.getConnection().prepareStatement(
                 "SELECT " +
                         "*" +
                         " FROM " +

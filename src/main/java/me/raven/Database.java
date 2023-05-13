@@ -3,8 +3,10 @@ package me.raven;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 
+import javax.xml.crypto.Data;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.Properties;
 
 public class Database {
 
@@ -14,7 +16,26 @@ public class Database {
 
     public Database() {
         instance = this;
+
         init();
+    }
+
+    public Database(HikariConfig hikariConfig) {
+        instance = this;
+
+        hikariDataSource = new HikariDataSource(hikariConfig);
+    }
+
+    public Database(Properties properties) {
+        instance = this;
+
+        hikariDataSource = new HikariDataSource(new HikariConfig(properties));
+    }
+
+    public Database(String path) {
+        instance = this;
+
+        hikariDataSource = new HikariDataSource(new HikariConfig(path));
     }
 
     private void init() {
