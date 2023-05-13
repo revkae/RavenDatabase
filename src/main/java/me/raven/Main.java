@@ -2,13 +2,11 @@ package me.raven;
 
 public class Main {
     public static void main(String[] args) {
-        Database database = new Database();
-        Table table = new Table("test",
+        Database database = new Database().attachTable(Table.with("test",
                 Column.with("id", DataType.VARCHAR, 100, true),
                 Column.with("first", DataType.VARCHAR, 1000),
-                Column.with("second", DataType.VARCHAR, 1000)
-        );
-        table.update();
-        database.attachTable(table);
+                Column.with("second", DataType.VARCHAR, 1000)));
+
+
     }
 }

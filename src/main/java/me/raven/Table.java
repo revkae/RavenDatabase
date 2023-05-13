@@ -1,13 +1,14 @@
 package me.raven;
 
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
-import java.sql.SQLException;
+import lombok.Getter;
+
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.StringJoiner;
 
+@Getter
 public class Table {
 
     private final Database database;
@@ -35,24 +36,51 @@ public class Table {
         }
     }
 
-    public void update(List<DataValue> whereValues, DataValue... dataValues) {
+    public boolean exists(Where where) {
+        StringJoiner wheres = new StringJoiner(" AND ");
+        for (DataValue dataValue : where.getDataValues()) {
+            wheres.add(dataValue.name + " = '" + dataValue.value + "'");
+        }
+
+        try {
+            Connection connection = database.getConnection();
+
+            PreparedStatement preparedStatement = connection.prepareStatement(
+                    "SELECT * FROM %s WHERE EXISTS (SELECT * FROM %s WHERE `%s`)"
+                            .formatted(tableName, tableName, where)
+            );
+
+            ResultSet resultSet = preparedStatement.executeQuery();
+
+            boolean rowExists = resultSet.next();
+
+            if (rowExists) {
+
+            }
+
+            preparedStatement.close();
+            resultSet.close();
+            connection.close();
+        } catch (SQLException sqlException) {
+            sqlException.printStackTrace();
+        }
+
+        return !;
+    }
+
+    public void updateRow(Row row, WhereValue whereValue) {
         StringJoiner sets = new StringJoiner(", ");
-        for (DataValue dataValue : dataValues) {
+        for (DataValue dataValue : whereValue.getDataValues()) {
             sets.add(dataValue.name + " = '" + dataValue.value + "'");
         }
 
         StringJoiner wheres = new StringJoiner(" AND ");
-        for (DataValue whereValue : whereValues) {
-            wheres.add(whereValue.name + " = '" + whereValue.value + "'");
+        for (DataValue dataValue : row.getDataValues()) {
+            wheres.add(dataValue.name + " = '" + dataValue.value + "'");
         }
 
         try (PreparedStatement statement = database.getConnection().prepareStatement(
-                "UPDATE "
-                        + tableName
-                        + " SET "
-                        + sets
-                        + " WHERE "
-                        + wheres)) {
+                "UPDATE %s SET %s WHERE %s".formatted(tableName, sets, wheres))) {
 
             statement.executeUpdate();
         } catch (SQLException e) {
@@ -60,34 +88,19 @@ public class Table {
         }
     }
 
-    public void insert(DataValue... dataValue) {
-        StringJoiner names = new StringJoiner(",");
-        StringJoiner values = new StringJoiner(",");
+    public void updateRow(Where where, WhereValue whereValue) {
+        StringJoiner sets = new StringJoiner(", ");
+        for (DataValue dataValue : whereValue.getDataValues()) {
+            sets.add(dataValue.name + " = '" + dataValue.value + "'");
+        }
 
-        for (DataValue value : dataValue) {
-            names.add(value.name);
-            values.add("?");
+        StringJoiner wheres = new StringJoiner(" AND ");
+        for (DataValue dataValue : where.getDataValues()) {
+            wheres.add(dataValue.name + " = '" + dataValue.value + "'");
         }
 
         try (PreparedStatement statement = database.getConnection().prepareStatement(
-                "INSERT INTO "
-                        + tableName
-                        + "(" + names + ")"
-                        + "VALUES"
-                        + "(" + values + ")")) {
-
-            int num = 1;
-            for (DataValue value : dataValue) {
-                if (value.value instanceof String)
-                    statement.setString(num, (String) value.value);
-                else if (value.value instanceof Integer)
-                    statement.setInt(num, (Integer) value.value);
-                else if (value.value instanceof Double)
-                    statement.setDouble(num, (Double) value.value);
-                else if (value.value instanceof Boolean)
-                    statement.setBoolean(num, (Boolean) value.value);
-                num++;
-            }
+                "UPDATE %s SET %s WHERE %s".formatted(tableName, sets, wheres))) {
 
             statement.executeUpdate();
         } catch (SQLException e) {
@@ -95,7 +108,13 @@ public class Table {
         }
     }
 
-    public void insert(Row row) {
+    public void addRows(Row... rows) {
+        for (Row row : rows) {
+            addRow(row);
+        }
+    }
+
+    public void addRow(Row row) {
         StringJoiner names = new StringJoiner(",");
         StringJoiner values = new StringJoiner(",");
 
@@ -105,11 +124,7 @@ public class Table {
         }
 
         try (PreparedStatement statement = database.getConnection().prepareStatement(
-                "INSERT INTO "
-                        + tableName
-                        + "(" + names + ")"
-                        + "VALUES"
-                        + "(" + values + ")")) {
+                "INSERT INTO %s (%s) VALUES (%s)".formatted(tableName, names, values))) {
 
             int num = 1;
             for (DataValue value : row.getDataValues()) {
@@ -130,31 +145,7 @@ public class Table {
         }
     }
 
-    public void insert(Row... rows) {
-        for (Row row : rows) {
-            insert(row);
-        }
-    }
-
-    public void delete(DataValue... where) {
-        StringJoiner whereValues = new StringJoiner(" AND ");
-        for (DataValue dataValue : where) {
-            whereValues.add(dataValue.name + " = '" + dataValue.value + "'");
-        }
-
-        try (PreparedStatement preparedStatement = database.getConnection().prepareStatement(
-                "DELETE FROM "
-                        + tableName
-                        + " WHERE "
-                        + whereValues)) {
-
-            preparedStatement.executeUpdate();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public void delete(Row row) {
+    public void deleteRow(Row row) {
         StringJoiner whereValues = new StringJoiner(" AND ");
         for (DataValue dataValue : row.getDataValues()) {
             whereValues.add(dataValue.name + " = '" + dataValue.value + "'");
@@ -172,9 +163,9 @@ public class Table {
         }
     }
 
-    public void delete(Row... rows) {
+    public void deleteRows(Row... rows) {
         for (Row row : rows) {
-            delete(row);
+            deleteRow(row);
         }
     }
 
@@ -199,6 +190,7 @@ public class Table {
             e.printStackTrace();
         }
     }
+
     public List<DataValue> getColumn(String name) {
         List<DataValue> output = new ArrayList<>();
 
@@ -237,5 +229,9 @@ public class Table {
             e.printStackTrace();
         }
         return output;
+    }
+
+    public static Table with(String tableName, Column... columns) {
+        return new Table(tableName, columns);
     }
 }
