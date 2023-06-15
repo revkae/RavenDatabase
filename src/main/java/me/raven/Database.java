@@ -2,6 +2,8 @@ package me.raven;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
+import lombok.Getter;
+import lombok.NonNull;
 
 import javax.xml.crypto.Data;
 import java.sql.Connection;
@@ -13,12 +15,16 @@ import java.util.Set;
 
 public class Database {
 
+    @NonNull
     private static Database instance = null;
+    @Getter
+    private Query query;
     private HikariDataSource hikariDataSource;
     private Map<String, Table> tables = new HashMap<>();
 
     public Database() {
         instance = this;
+        query = new Query(this);
 
         init();
     }

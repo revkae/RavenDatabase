@@ -1,5 +1,8 @@
 package me.raven;
 
+import lombok.Getter;
+
+@Getter
 public enum DataType {
     BIGINT("BIGINT"),
     BINARY("BINARY"),
@@ -36,9 +39,5 @@ public enum DataType {
 
     DataType(String type) {
         this.type = type;
-    }
-
-    public String getType() {
-        return type;
     }
 }

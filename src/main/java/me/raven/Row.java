@@ -1,25 +1,38 @@
 package me.raven;
 
+import lombok.Data;
+import lombok.Getter;
+
 import java.util.Arrays;
 import java.util.List;
 
+@Getter
 public class Row {
 
+    private Query query;
     private List<DataValue> row;
 
     public Row(DataValue... dataValues) {
+        this.query = Database.get().getQuery();
+
         this.row = Arrays.stream(dataValues).toList();
     }
 
-    public void update(DataValue dataValue) {
-        for (DataValue value : row) {
-            if (!value.name.equalsIgnoreCase(dataValue.name)) continue;
-
-            value = dataValue;
-        }
+    public Row() {
+        this.query = Database.get().getQuery();
     }
 
-    public DataValue get(String name) {
+    public void update(String tableName, DataValue... dataValues) {
+        query.updateRow(tableName, this, dataValues);
+
+        this.row = Arrays.stream(dataValues).toList();
+    }
+
+    public void delete(String tableName) {
+        query.deleteRow(tableName, this);
+    }
+
+    public DataValue getData(String name) {
         for (DataValue dataValue : row) {
             if (!dataValue.name.equalsIgnoreCase(name)) continue;
 
@@ -28,8 +41,8 @@ public class Row {
         return null;
     }
 
-    public List<DataValue> getDataValues() {
-        return row;
+    public void addData(DataValue dataValue) {
+        row.add(dataValue);
     }
 
     public static Row with(DataValue... dataValues) {
