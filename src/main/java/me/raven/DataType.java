@@ -1,8 +1,10 @@
 package me.raven;
 
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 @Getter
+@AllArgsConstructor
 public enum DataType {
     BIGINT("BIGINT"),
     BINARY("BINARY"),
@@ -36,8 +38,4 @@ public enum DataType {
     YEAR("YEAR");
 
     private final String type;
-
-    DataType(String type) {
-        this.type = type;
-    }
 }

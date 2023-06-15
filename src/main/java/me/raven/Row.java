@@ -1,7 +1,8 @@
 package me.raven;
 
-import lombok.Data;
 import lombok.Getter;
+import me.raven.records.Set;
+import me.raven.records.Where;
 
 import java.util.Arrays;
 import java.util.List;
@@ -9,7 +10,7 @@ import java.util.List;
 @Getter
 public class Row {
 
-    private Query query;
+    private final Query query;
     private List<DataValue> row;
 
     public Row(DataValue... dataValues) {
@@ -23,13 +24,13 @@ public class Row {
     }
 
     public void update(String tableName, DataValue... dataValues) {
-        query.updateRow(tableName, this, dataValues);
+        query.update(tableName, new Set(dataValues), new Where((DataValue[]) row.toArray()));
 
         this.row = Arrays.stream(dataValues).toList();
     }
 
     public void delete(String tableName) {
-        query.deleteRow(tableName, this);
+        query.delete(tableName, new Where((DataValue[]) row.toArray()));
     }
 
     public DataValue getData(String name) {
