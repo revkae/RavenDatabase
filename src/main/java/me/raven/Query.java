@@ -1,12 +1,12 @@
 package me.raven;
 
 import lombok.AllArgsConstructor;
+import me.raven.interfaces.QueryStatements;
 import me.raven.records.Set;
 import me.raven.records.Sets;
 import me.raven.records.Where;
 import me.raven.records.Wheres;
 
-import javax.swing.text.html.Option;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -16,10 +16,11 @@ import java.util.Optional;
 import java.util.StringJoiner;
 
 @AllArgsConstructor
-public class Query {
+public class Query implements QueryStatements {
 
     private final Database database;
 
+    @Override
     public boolean rowExists(String tableName, Where where) {
         StringJoiner wheres = new StringJoiner(" AND ");
         for (DataValue dataValue : where.dataValues()) {
@@ -51,6 +52,7 @@ public class Query {
         return false;
     }
 
+    @Override
     public Optional<Row> getRow(String tableName, Where where) {
         Row row = new Row();
 
@@ -88,6 +90,7 @@ public class Query {
         return Optional.of(row);
     }
 
+    @Override
     public List<Optional<Row>> getRows(String tableName, Wheres wheres) {
         List<Optional<Row>> rows = new ArrayList<>();
 
@@ -99,6 +102,7 @@ public class Query {
         return rows;
     }
 
+    @Override
     public void update(String tableName, Set set, Where where) {
         StringJoiner sets = new StringJoiner(", ");
         for (DataValue dataValue : set.dataValues()) {
@@ -123,18 +127,21 @@ public class Query {
         }
     }
 
+    @Override
     public void update(String tableName, Sets sets, Wheres wheres) {
         for (int i = 0; i < sets.sets().length; i++) {
             update(tableName, sets.sets()[i], wheres.wheres()[i]);
         }
     }
 
+    @Override
     public void addRows(String tableName, Row... rows) {
         for (Row row : rows) {
             addRow(tableName, row);
         }
     }
 
+    @Override
     public void addRow(String tableName, Row row) {
         StringJoiner names = new StringJoiner(",");
         StringJoiner values = new StringJoiner(",");
@@ -158,6 +165,7 @@ public class Query {
         }
     }
 
+    @Override
     public void delete(String tableName, Where where) {
         StringJoiner wheres = new StringJoiner(" AND ");
         for (DataValue dataValue : where.dataValues()) {
@@ -180,8 +188,9 @@ public class Query {
         }
     }
 
-    public void delete(String tableName, Where... wheres) {
-        for (Where row : wheres) {
+    @Override
+    public void delete(String tableName, Wheres wheres) {
+        for (Where row : wheres.wheres()) {
             delete(tableName, row);
         }
     }

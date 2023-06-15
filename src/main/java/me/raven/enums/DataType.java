@@ -1,4 +1,4 @@
-package me.raven;
+package me.raven.enums;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

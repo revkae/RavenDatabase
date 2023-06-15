@@ -3,6 +3,7 @@ package me.raven;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NonNull;
+import me.raven.enums.DataType;
 
 @Getter
 @NonNull
