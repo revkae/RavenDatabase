@@ -48,49 +48,90 @@ public class Table implements Statements {
         return new Table(tableName, columns);
     }
 
-
     @Override
-    public boolean rowExists(Where where) {
-        return query.rowExists(tableName, where);
+    public boolean oneRowExists(Where where) {
+        return query.oneRowExists(tableName, where);
     }
 
     @Override
-    public Optional<Row> getRow(Where where) {
-        return query.getRow(tableName, where);
+    public boolean multipleRowExists(Wheres wheres) {
+        return query.multipleRowExists(tableName, wheres);
     }
 
     @Override
-    public List<Optional<Row>> getRows(Wheres wheres) {
-        return query.getRows(tableName, wheres);
+    public Optional<Row> getOneRow(Where where) {
+        return query.getOneRow(tableName, where);
     }
 
     @Override
-    public void update(Set set, Where where) {
-        query.update(tableName, set, where);
+    public List<Optional<Row>> getMultipleRow(Wheres wheres) {
+        return query.getMultipleRow(tableName, wheres);
     }
 
     @Override
-    public void update(Sets sets, Wheres wheres) {
-        query.update(tableName, sets, wheres);
+    public void updateOne(Set set, Where where) {
+        query.updateOne(tableName, set, where);
     }
 
     @Override
-    public void addRows(Row... rows) {
-        query.addRows(tableName, rows);
+    public void updateMultiple(Sets sets, Wheres wheres) {
+        query.updateMultiple(tableName, sets, wheres);
     }
 
     @Override
-    public void addRow(Row row) {
-        query.addRow(tableName, row);
+    public void addMultipleRow(Row... rows) {
+        query.addMultipleRow(tableName, rows);
     }
 
     @Override
-    public void delete(Where where) {
-        query.delete(tableName, where);
+    public void addOneRow(Row row) {
+        query.addOneRow(tableName, row);
     }
 
     @Override
-    public void delete(Wheres wheres) {
-        query.delete(tableName, wheres);
+    public void removeOneRow(Where where) {
+        query.removeOneRow(tableName, where);
+    }
+
+    @Override
+    public void removeMultipleRow(Wheres wheres) {
+        query.removeMultipleRow(tableName, wheres);
+    }
+
+    @Override
+    protected Table clone() {
+        try {
+            return (Table) super.clone();
+        } catch (CloneNotSupportedException e) {
+            throw new AssertionError(e);
+        }
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Table table = (Table) o;
+        return Objects.equals(database, table.database) && Objects.equals(query, table.query) && Objects.equals(tableName, table.tableName) && Objects.equals(columns, table.columns);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(database, query, tableName, columns);
+    }
+
+    @Override
+    public String toString() {
+        return "Table{" +
+                "database=" + database +
+                ", query=" + query +
+                ", tableName='" + tableName + '\'' +
+                ", columns=" + columns +
+                '}';
+    }
+
+    @Override
+    public void clearTable() {
+        query.clearTable(tableName);
     }
 }

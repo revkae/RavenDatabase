@@ -2,10 +2,7 @@ package me.raven;
 
 import lombok.AllArgsConstructor;
 import me.raven.interfaces.QueryStatements;
-import me.raven.records.Set;
-import me.raven.records.Sets;
-import me.raven.records.Where;
-import me.raven.records.Wheres;
+import me.raven.records.*;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -21,26 +18,30 @@ public class Query implements QueryStatements {
     private final Database database;
 
     @Override
-    public boolean rowExists(String tableName, Where where) {
+    public boolean oneRowExists(String tableName, Where where) {
         StringJoiner wheres = new StringJoiner(" AND ");
         for (DataValue dataValue : where.dataValues()) {
-            wheres.add(dataValue.name + " = '?'");
+            wheres.add(dataValue.name() + " = ?");
         }
 
-        try (PreparedStatement preparedStatement = database.getConnection().prepareStatement(
-                "SELECT * FROM %s WHERE EXISTS (SELECT * FROM %s WHERE `%s`)"
-                        .formatted(tableName, tableName, wheres))) {
+        String query = String.format("SELECT COUNT(1) FROM %s WHERE %s", tableName, wheres);
 
-            for (int i = 1; i < where.dataValues().length + 1; i++) {
-                preparedStatement.setObject(i, where.dataValues()[i - 1].value);
+        try (PreparedStatement preparedStatement = database.getConnection().prepareStatement(query)) {
+            int parameterIndex = 1;
+            for (DataValue dataValue : where.dataValues()) {
+                preparedStatement.setObject(parameterIndex++, dataValue.value());
             }
 
             ResultSet resultSet = preparedStatement.executeQuery();
 
             if (resultSet.next()) {
-                preparedStatement.close();
-                resultSet.close();
-                return true;
+                int count = resultSet.getInt(1);
+
+                if (count > 0) {
+                    preparedStatement.close();
+                    resultSet.close();
+                    return true;
+                }
             }
 
             preparedStatement.close();
@@ -53,20 +54,34 @@ public class Query implements QueryStatements {
     }
 
     @Override
-    public Optional<Row> getRow(String tableName, Where where) {
+    public boolean multipleRowExists(String tableName, Wheres wheres) {
+        for (Where where : wheres.wheres()) {
+            if (oneRowExists(tableName, where)) continue;
+
+            return false;
+        }
+
+        return true;
+    }
+
+    @Override
+    public Optional<Row> getOneRow(String tableName, Where where) {
         Row row = new Row();
 
         StringJoiner wheres = new StringJoiner(" AND ");
         for (DataValue dataValue : where.dataValues()) {
-            wheres.add(dataValue.name + " = '?'");
+            wheres.add(dataValue.name() + " = '?'");
         }
 
-        try (PreparedStatement preparedStatement = database.getConnection().prepareStatement(
-                "SELECT * FROM %s WHERE %s".formatted(tableName, wheres))) {
+        String query = "SELECT * FROM %s WHERE %s".formatted(tableName, wheres);
 
-            for (int i = 1; i < where.dataValues().length + 1; i++) {
-                preparedStatement.setObject(i, where.dataValues()[i - 1].value);
+        try (PreparedStatement preparedStatement = database.getConnection().prepareStatement(query)) {
+
+            int parameterIndex = 1;
+            for (DataValue dataValue : where.dataValues()) {
+                preparedStatement.setObject(parameterIndex++, dataValue.value());
             }
+
             ResultSet resultSet = preparedStatement.executeQuery();
             Table table = database.getTable(tableName);
 
@@ -75,7 +90,7 @@ public class Query implements QueryStatements {
                     String name = column.getName();
                     if (resultSet.getObject(name) == null) continue;
 
-                    row.addData(DataValue.with(name, resultSet.getObject(name)));
+                    row.addData(DataValue.of(name, resultSet.getObject(name)));
                 }
             }
 
@@ -87,38 +102,43 @@ public class Query implements QueryStatements {
         if (row.getRow().isEmpty()) {
             return Optional.empty();
         }
+
+        row.setTableName(tableName);
         return Optional.of(row);
     }
 
     @Override
-    public List<Optional<Row>> getRows(String tableName, Wheres wheres) {
+    public List<Optional<Row>> getMultipleRow(String tableName, Wheres wheres) {
         List<Optional<Row>> rows = new ArrayList<>();
 
         for (Where where : wheres.wheres()) {
-            Optional<Row> row = getRow(tableName, where);
+            Optional<Row> row = getOneRow(tableName, where);
+
+            row.ifPresent(value -> value.setTableName(tableName));
 
             rows.add(row);
         }
         return rows;
     }
 
-    @Override
-    public void update(String tableName, Set set, Where where) {
+    public void updateOne(String tableName, Set set, Where where) {
         StringJoiner sets = new StringJoiner(", ");
         for (DataValue dataValue : set.dataValues()) {
-            sets.add(dataValue.name + " = '?'");
+            sets.add(dataValue.name() + " = ?");
         }
 
         StringJoiner wheres = new StringJoiner(" AND ");
         for (DataValue dataValue : where.dataValues()) {
-            wheres.add(dataValue.name + " = '" + dataValue.value + "'");
+            wheres.add(dataValue.name() + " = '" + dataValue.value() + "'");
         }
 
-        try (PreparedStatement preparedStatement = database.getConnection().prepareStatement(
-                "UPDATE %s SET %s WHERE %s".formatted(tableName, sets, wheres))) {
+        String query = "UPDATE %s SET %s WHERE %s".formatted(tableName, sets, wheres);
 
-            for (int i = 1; i < set.dataValues().length + 1; i++) {
-                preparedStatement.setObject(i,  set.dataValues()[i - 1].value);
+        try (PreparedStatement preparedStatement = database.getConnection().prepareStatement(query)) {
+
+            int parameterIndex = 1;
+            for (DataValue dataValue : set.dataValues()) {
+                preparedStatement.setObject(parameterIndex++, dataValue.value());
             }
             preparedStatement.executeUpdate();
         }
@@ -128,34 +148,35 @@ public class Query implements QueryStatements {
     }
 
     @Override
-    public void update(String tableName, Sets sets, Wheres wheres) {
+    public void updateMultiple(String tableName, Sets sets, Wheres wheres) {
         for (int i = 0; i < sets.sets().length; i++) {
-            update(tableName, sets.sets()[i], wheres.wheres()[i]);
+            updateOne(tableName, sets.sets()[i], wheres.wheres()[i]);
         }
     }
 
     @Override
-    public void addRows(String tableName, Row... rows) {
+    public void addMultipleRow(String tableName, Row... rows) {
         for (Row row : rows) {
-            addRow(tableName, row);
+            addOneRow(tableName, row);
         }
     }
 
     @Override
-    public void addRow(String tableName, Row row) {
+    public void addOneRow(String tableName, Row row) {
         StringJoiner names = new StringJoiner(",");
         StringJoiner values = new StringJoiner(",");
 
         for (DataValue value : row.getRow()) {
-            names.add(value.name);
+            names.add(value.name());
             values.add("?");
         }
 
-        try (PreparedStatement preparedStatement = database.getConnection().prepareStatement(
-                "INSERT INTO %s (%s) VALUES (%s)".formatted(tableName, names, values))) {
+        String query = "INSERT INTO %s (%s) VALUES (%s)".formatted(tableName, names, values);
 
-            for (int i = 1; i < row.getRow().size() + 1; i++) {
-                preparedStatement.setObject(i, row.getRow().get(i - 1));
+        try (PreparedStatement preparedStatement = database.getConnection().prepareStatement(query)) {
+            int parameterIndex = 1;
+            for (DataValue dataValue : row.getRow()) {
+                preparedStatement.setObject(parameterIndex++, dataValue.value());
             }
 
             preparedStatement.executeUpdate();
@@ -166,20 +187,18 @@ public class Query implements QueryStatements {
     }
 
     @Override
-    public void delete(String tableName, Where where) {
+    public void removeOneRow(String tableName, Where where) {
         StringJoiner wheres = new StringJoiner(" AND ");
         for (DataValue dataValue : where.dataValues()) {
-            wheres.add(dataValue.name + " = '?'");
+            wheres.add(dataValue.name() + " = ?");
         }
 
-        try (PreparedStatement preparedStatement = database.getConnection().prepareStatement(
-                "DELETE FROM "
-                        + tableName
-                        + " WHERE "
-                        + wheres)) {
+        String query = "DELETE FROM %s WHERE %s".formatted(tableName, wheres);
 
-            for (int i = 1; i < where.dataValues().length + 1; i++) {
-                preparedStatement.setObject(i, where.dataValues()[i - 1]);
+        try (PreparedStatement preparedStatement = database.getConnection().prepareStatement(query)) {
+            int parameterIndex = 1;
+            for (DataValue dataValue : where.dataValues()) {
+                preparedStatement.setObject(parameterIndex++, dataValue.value());
             }
 
             preparedStatement.executeUpdate();
@@ -188,10 +207,21 @@ public class Query implements QueryStatements {
         }
     }
 
+    public void removeMultipleRow(String tableName, Wheres wheres) {
+        for (Where where : wheres.wheres()) {
+            removeOneRow(tableName, where);
+        }
+    }
+
     @Override
-    public void delete(String tableName, Wheres wheres) {
-        for (Where row : wheres.wheres()) {
-            delete(tableName, row);
+    public void clearTable(String tableName) {
+        String query = "TRUNCATE TABLE %s".formatted(tableName);
+
+        try (PreparedStatement preparedStatement = database.getConnection().prepareStatement(query)) {
+            preparedStatement.executeUpdate();
+        }
+        catch (SQLException e) {
+            e.printStackTrace();
         }
     }
 }

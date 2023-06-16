@@ -1,6 +1,8 @@
 package me.raven.records;
 
-import me.raven.DataValue;
-
 public record Where(DataValue... dataValues) {
+
+    public static Where with(DataValue... dataValues) {
+        return new Where(dataValues);
+    }
 }

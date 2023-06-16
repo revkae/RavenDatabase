@@ -11,21 +11,24 @@ import java.util.Optional;
 
 public interface QueryStatements {
 
-    boolean rowExists(String tableName, Where where);
+    boolean oneRowExists(String tableName, Where where);
+    boolean multipleRowExists(String tableName, Wheres wheres);
 
-    Optional<Row> getRow(String tableName, Where where);
+    Optional<Row> getOneRow(String tableName, Where where);
 
-    List<Optional<Row>> getRows(String tableName, Wheres wheres);
+    List<Optional<Row>> getMultipleRow(String tableName, Wheres wheres);
 
-    void update(String tableName, Set set, Where where);
+    void updateOne(String tableName, Set set, Where where);
 
-    void update(String tableName, Sets sets, Wheres wheres);
+    void updateMultiple(String tableName, Sets sets, Wheres wheres);
 
-    void addRows(String tableName, Row... rows);
+    void addMultipleRow(String tableName, Row... rows);
 
-    void addRow(String tableName, Row row);
+    void addOneRow(String tableName, Row row);
 
-    void delete(String tableName, Where where);
+    void removeOneRow(String tableName, Where where);
 
-    void delete(String tableName, Wheres wheres);
+    void removeMultipleRow(String tableName, Wheres wheres);
+
+    void clearTable(String tableName);
 }

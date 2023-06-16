@@ -10,21 +10,24 @@ import java.util.List;
 import java.util.Optional;
 
 public interface Statements {
-    boolean rowExists(Where where);
+    boolean oneRowExists(Where where);
+    boolean multipleRowExists(Wheres wheres);
 
-    Optional<Row> getRow(Where where);
+    Optional<Row> getOneRow(Where where);
 
-    List<Optional<Row>> getRows(Wheres wheres);
+    List<Optional<Row>> getMultipleRow(Wheres wheres);
 
-    void update(Set set, Where where);
+    void updateOne(Set set, Where where);
 
-    void update(Sets sets, Wheres wheres);
+    void updateMultiple(Sets sets, Wheres wheres);
 
-    void addRows(Row... rows);
+    void addMultipleRow(Row... rows);
 
-    void addRow(Row row);
+    void addOneRow(Row row);
 
-    void delete(Where where);
+    void removeOneRow(Where where);
 
-    void delete(Wheres wheres);
+    void removeMultipleRow(Wheres wheres);
+
+    void clearTable();
 }

@@ -4,6 +4,8 @@ import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import lombok.Getter;
 import lombok.NonNull;
+import me.raven.records.Settings;
+import org.h2.engine.Setting;
 
 import javax.xml.crypto.Data;
 import java.sql.Connection;
@@ -22,27 +24,37 @@ public class Database {
     private HikariDataSource hikariDataSource;
     private Map<String, Table> tables = new HashMap<>();
 
-    public Database() {
+    public Database(Settings settings) {
         instance = this;
         query = new Query(this);
 
-        init();
-    }
+        HikariConfig hikariConfig = new HikariConfig();
 
-    public Database(HikariConfig hikariConfig) {
-        instance = this;
+        hikariConfig.setJdbcUrl("jdbc:mysql://" + settings.host() + ":"
+                + settings.port() + "/" + settings.database() + "?useSSL=" + settings.useSSL());
+        hikariConfig.setDriverClassName("com.mysql.cj.jdbc.Driver");
+        hikariConfig.setUsername(settings.username());
+        hikariConfig.setPassword(settings.password());
+        hikariConfig.addDataSourceProperty("cachePrepStmts", "true");
+        hikariConfig.addDataSourceProperty("prepStmtCacheSize", "250");
+        hikariConfig.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
+        hikariConfig.setMinimumIdle(1);
+        hikariConfig.setAutoCommit(true);
+        hikariConfig.setMaximumPoolSize(settings.maxPool());
 
-        hikariDataSource = new HikariDataSource(hikariConfig);
+        this.hikariDataSource = new HikariDataSource(hikariConfig);
     }
 
     public Database(Properties properties) {
         instance = this;
+        query = new Query(this);
 
         hikariDataSource = new HikariDataSource(new HikariConfig(properties));
     }
 
     public Database(String path) {
         instance = this;
+        query = new Query(this);
 
         hikariDataSource = new HikariDataSource(new HikariConfig(path));
     }
