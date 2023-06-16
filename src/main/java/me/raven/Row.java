@@ -62,6 +62,7 @@ public class Row implements Cloneable {
         row.remove(dataValue);
     }
 
+
     public static Row with(String tableName, DataValue... dataValues) {
         return new Row(tableName, dataValues);
     }

@@ -24,13 +24,34 @@ public class Column implements Cloneable {
         this.isPrimary = false;
     }
 
+    /**
+     *
+     * @param name
+     * The column's name
+     * @param type
+     * The column's type
+     * @param length
+     * The length of value
+     */
     public static Column with(String name, DataType type, int length) {
         return new Column(name, type, length);
     }
 
+    /**
+     *
+     * @param name
+     * The column's name
+     * @param type
+     * The column's type
+     * @param length
+     * The length of value
+     * @param isPrimary
+     * The boolean for setting primary
+     */
     public static Column with(String name, DataType type, int length, boolean isPrimary) {
         return new Column(name, type, length, isPrimary);
     }
+
 
     @Override
     protected Column clone() {

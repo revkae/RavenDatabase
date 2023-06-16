@@ -99,6 +99,11 @@ public class Table implements Statements {
     }
 
     @Override
+    public void clearTable() {
+        query.clearTable(tableName);
+    }
+
+    @Override
     protected Table clone() {
         try {
             return (Table) super.clone();
@@ -128,10 +133,5 @@ public class Table implements Statements {
                 ", tableName='" + tableName + '\'' +
                 ", columns=" + columns +
                 '}';
-    }
-
-    @Override
-    public void clearTable() {
-        query.clearTable(tableName);
     }
 }
